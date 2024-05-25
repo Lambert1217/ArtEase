@@ -8,7 +8,7 @@ class MainWindow(tk.Tk):
         self.title("ArtEase")
         self.geometry("300x100")
         self.import_button = tk.Button(self, text="Import Image", command=self.import_image)
-        self.import_button.pack()
+        self.import_button.pack(fill=tk.BOTH, expand=True)
         self.image_windows = []
 
         # 获取屏幕的宽度和高度
