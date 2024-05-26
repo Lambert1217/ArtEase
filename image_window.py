@@ -5,6 +5,7 @@ import os
 import math
 from CropDialog import CropDialog
 import numpy as np
+from LinearPredictiveCoder import LinearPredictiveCoder
 
 class ImageWindow(tk.Toplevel):
     def __init__(self, master=None, image_path=None, image=None):
@@ -20,27 +21,53 @@ class ImageWindow(tk.Toplevel):
         self.minsize(300, 100)
 
     def create_widgets(self):
-        # 创建按钮和标签
-        self.save_button = tk.Button(self, text="保存图片", command=self.save_image)
+        # 创建第一行的按钮和标签
+        frame1 = tk.Frame(self)
+        frame1.pack(side=tk.TOP)
+
+        self.save_button = tk.Button(frame1, text="保存图片", command=self.save_image)
         self.save_button.pack(side=tk.LEFT, padx=5, pady=5)
         
-        self.crop_button = tk.Button(self, text="裁剪图片", command=self.crop_image_dialog)
+        self.crop_button = tk.Button(frame1, text="裁剪图片", command=self.crop_image_dialog)
         self.crop_button.pack(side=tk.LEFT, padx=5, pady=5)
         
-        self.gray_button = tk.Button(self, text="转换为灰度", command=self.convert_to_grayscale)
+        self.gray_button = tk.Button(frame1, text="转换为灰度", command=self.convert_to_grayscale)
         self.gray_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-        self.histogram_button = tk.Button(self, text="直方图均衡", command=self.histogram_equalization)
+        self.histogram_button = tk.Button(frame1, text="直方图均衡", command=self.histogram_equalization)
         self.histogram_button.pack(side=tk.LEFT, padx=5, pady=5)
         
-        self.bw_button = tk.Button(self, text="转换为黑白", command=self.convert_to_black_white)
+        self.bw_button = tk.Button(frame1, text="转换为黑白", command=self.convert_to_black_white)
         self.bw_button.pack(side=tk.LEFT, padx=5, pady=5)
-        
-        self.threshold_label = tk.Label(self, text="阈值:")
+
+        self.threshold_label = tk.Label(frame1, text="阈值:")
         self.threshold_label.pack(side=tk.LEFT, padx=5, pady=5)
         
-        self.threshold_entry = tk.Entry(self)
+        self.threshold_entry = tk.Entry(frame1)
         self.threshold_entry.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        # 创建第二行的标签、输入框和按钮
+        frame2 = tk.Frame(self)
+        frame2.pack(side=tk.TOP)
+
+        self.encode_button = tk.Button(frame2, text="编码", command=self.encode_image)
+        self.encode_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.decode_button = tk.Button(frame2, text="解码", command=self.decode_image)
+        self.decode_button.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        self.predictor_order_label = tk.Label(frame2, text="预测阶数:")
+        self.predictor_order_label.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        self.predictor_order_entry = tk.Entry(frame2)
+        self.predictor_order_entry.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        self.prediction_coefficients_label = tk.Label(frame2, text="预测系数:")
+        self.prediction_coefficients_label.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        self.prediction_coefficients_entry = tk.Entry(frame2)
+        self.prediction_coefficients_entry.pack(side=tk.LEFT, padx=5, pady=5)
+
 
     def show_image(self, image_path=None, image=None):
         # 显示图片
@@ -62,6 +89,12 @@ class ImageWindow(tk.Toplevel):
         self.threshold_entry.config(state=tk.NORMAL if mode == "L" else tk.DISABLED)
         self.threshold_label.config(state=tk.NORMAL if mode == "L" else tk.DISABLED)
         self.histogram_button.config(state=tk.NORMAL if mode in ("RGB", "L") else tk.DISABLED)
+        self.encode_button.config(state=tk.NORMAL if mode == "L" else tk.DISABLED)
+        self.decode_button.config(state=tk.NORMAL if mode == "L" else tk.DISABLED)
+        self.predictor_order_entry.config(state=tk.NORMAL if mode == "L" else tk.DISABLED)
+        self.predictor_order_label.config(state=tk.NORMAL if mode == "L" else tk.DISABLED)
+        self.prediction_coefficients_entry.config(state=tk.NORMAL if mode == "L" else tk.DISABLED)
+        self.prediction_coefficients_label.config(state=tk.NORMAL if mode == "L" else tk.DISABLED)
 
     def crop_image_dialog(self):
         # 弹出裁剪对话框
@@ -126,6 +159,33 @@ class ImageWindow(tk.Toplevel):
         elif image.mode == "L":
             equalized_image = ImageOps.equalize(image).convert('L')
         self.show_new_image(equalized_image)
+
+    def encode_image(self):
+        # 编码图片
+        predictor_order = int(self.predictor_order_entry.get())
+        prediction_coefficients_str = self.prediction_coefficients_entry.get()
+        prediction_coefficients = [float(x.strip()) for x in prediction_coefficients_str.split(',')]
+        
+        image = self.load_image()
+        lpc = LinearPredictiveCoder(predictor_order, prediction_coefficients)
+        encoded_data = lpc.encode(image)
+        encoded_array = np.array(encoded_data)
+        encoded_image = Image.fromarray(encoded_array.astype(np.uint8))
+        
+        self.show_new_image(encoded_image)
+    
+    def decode_image(self):
+        # 解码图片
+        predictor_order = int(self.predictor_order_entry.get())
+        prediction_coefficients_str = self.prediction_coefficients_entry.get()
+        prediction_coefficients = [float(x.strip()) for x in prediction_coefficients_str.split(',')]
+        
+        encoded_image = self.load_image()
+        lpc = LinearPredictiveCoder(predictor_order, prediction_coefficients)
+        decoded_image = lpc.decode(np.array(encoded_image), encoded_image.size)
+        
+        # 创建新的ImageWindow来显示解码后的数据
+        self.show_new_image(decoded_image)
 
     def show_new_image(self, new_image):
         # 显示新的图片
