@@ -7,34 +7,73 @@ class LinearPredictiveCoder:
         self.prediction_coefficients = prediction_coefficients
 
     def encode(self, image):
-        # 获取图像数据
+        # 确保图像是灰度图
+        if image.mode != 'L':
+            image = image.convert('L')
+        
         img_data = np.array(image)
+        height, width = img_data.shape
+        encoded_image = np.zeros((height, width), dtype=np.int16)
 
-        # 初始化编码后的数据列表
-        encoded_data = []
+        if self.predictor_order == 1:
+            encoded_image[:, 0] = img_data[:, 0]
+            for y in range(height):
+                for x in range(1, width):
+                    predicted_value = np.dot(self.prediction_coefficients, [encoded_image[y, x-1]])
+                    encoded_image[y, x] = img_data[y, x] - predicted_value
+        elif self.predictor_order == 2:
+            encoded_image[:, 0] = img_data[:, 0]
+            encoded_image[0, :] = img_data[0, :]
+            for y in range(1, height):
+                for x in range(1, width):
+                    predicted_value = np.dot(self.prediction_coefficients, [encoded_image[y, x-1], encoded_image[y-1, x]])
+                    encoded_image[y, x] = img_data[y, x] - predicted_value
+        elif self.predictor_order == 3:
+            encoded_image[:, 0] = img_data[:, 0]
+            encoded_image[0, :] = img_data[0, :]
+            for y in range(1, height):
+                for x in range(1, width):
+                    predicted_value = np.dot(self.prediction_coefficients, [encoded_image[y, x-1], encoded_image[y-1, x], encoded_image[y-1, x-1]])
+                    encoded_image[y, x] = img_data[y, x] - predicted_value
+        else:
+            raise ValueError("不支持的预测器阶数。请使用 1, 2 或 3。")
 
-        # 对图像进行线性预测编码
-        for row in img_data:
-            prediction_residuals = np.zeros_like(row, dtype=np.int32)
-            for i in range(self.predictor_order, len(row)):
-                predicted_value = np.dot(self.prediction_coefficients, row[i - self.predictor_order:i])
-                prediction_residuals[i] = row[i] - predicted_value
-            encoded_data.append(prediction_residuals)
+        # 将值剪辑到 uint8 范围内
+        encoded_image = np.clip(encoded_image, 0, 255).astype(np.uint8)
+        return Image.fromarray(encoded_image)
 
-        return encoded_data
+    def decode(self, image):
+        # 确保图像是灰度图
+        if image.mode != 'L':
+            image = image.convert('L')
+        
+        img_data = np.array(image)
+        height, width = img_data.shape
+        decoded_image = np.zeros((height, width), dtype=np.int16)
 
-    def decode(self, encoded_data, image_shape):
-        # 初始化解码后的图像数据
-        decoded_image = np.zeros(image_shape, dtype=np.uint8)
+        if self.predictor_order == 1:
+            decoded_image[:, 0] = img_data[:, 0]
+            for y in range(height):
+                for x in range(1, width):
+                    predicted_value = np.dot(self.prediction_coefficients, [decoded_image[y, x-1]])
+                    decoded_image[y, x] = img_data[y, x] + predicted_value
+        elif self.predictor_order == 2:
+            decoded_image[:, 0] = img_data[:, 0]
+            decoded_image[0, :] = img_data[0, :]
+            for y in range(1, height):
+                for x in range(1, width):
+                    predicted_value = np.dot(self.prediction_coefficients, [decoded_image[y, x-1], decoded_image[y-1, x]])
+                    decoded_image[y, x] = img_data[y, x] + predicted_value
+        elif self.predictor_order == 3:
+            decoded_image[:, 0] = img_data[:, 0]
+            decoded_image[0, :] = img_data[0, :]
+            for y in range(1, height):
+                for x in range(1, width):
+                    predicted_value = np.dot(self.prediction_coefficients, [decoded_image[y, x-1], decoded_image[y-1, x], decoded_image[y-1, x-1]])
+                    decoded_image[y, x] = img_data[y, x] + predicted_value
+        else:
+            raise ValueError("不支持的预测器阶数。请使用 1, 2 或 3。")
 
-        # 对编码后的数据进行解码
-        for i, row in enumerate(encoded_data):
-            decoded_row = np.zeros_like(row, dtype=np.uint8)
-            for j in range(self.predictor_order, len(row)):
-                predicted_value = np.dot(self.prediction_coefficients, decoded_row[j - self.predictor_order:j])
-                decoded_row[j] = row[j] + predicted_value
-            # 将解码后的行数据赋值给解码后的图像的对应行
-            decoded_image[i] = decoded_row
-
+        # 将值剪辑到 uint8 范围内
+        decoded_image = np.clip(decoded_image, 0, 255).astype(np.uint8)
         return Image.fromarray(decoded_image)
-    

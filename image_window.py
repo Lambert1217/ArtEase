@@ -183,9 +183,7 @@ class ImageWindow(tk.Toplevel):
         
         image = self.load_image()
         lpc = LinearPredictiveCoder(predictor_order, prediction_coefficients)
-        encoded_data = lpc.encode(image)
-        encoded_array = np.array(encoded_data)
-        encoded_image = Image.fromarray(encoded_array.astype(np.uint8))
+        encoded_image = lpc.encode(image)
         
         self.show_new_image(encoded_image)
     
@@ -197,7 +195,7 @@ class ImageWindow(tk.Toplevel):
         
         encoded_image = self.load_image()
         lpc = LinearPredictiveCoder(predictor_order, prediction_coefficients)
-        decoded_image = lpc.decode(np.array(encoded_image), encoded_image.size)
+        decoded_image = lpc.decode(encoded_image)
         
         # 创建新的ImageWindow来显示解码后的数据
         self.show_new_image(decoded_image)
