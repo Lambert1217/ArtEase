@@ -8,12 +8,13 @@ import numpy as np
 from LinearPredictiveCoder import LinearPredictiveCoder
 
 class ImageWindow(tk.Toplevel):
-    def __init__(self, master=None, image_path=None, image=None):
+    def __init__(self, master=None, image_path=None, image=None, encode_data=None):
         super().__init__(master)
         self.title("Image Viewer")
         self.canvas = tk.Canvas(self)
         self.canvas.pack()
         self.image_path = image_path
+        self.encode_data = encode_data
         self.photo = None
         self.image = image
         self.create_widgets()
@@ -183,9 +184,12 @@ class ImageWindow(tk.Toplevel):
         
         image = self.load_image()
         lpc = LinearPredictiveCoder(predictor_order, prediction_coefficients)
-        encoded_image = lpc.encode(image)
+        encoded_data = lpc.encode(image)
+        encoded_image = Image.fromarray(encoded_data.astype(np.uint8))
         
-        self.show_new_image(encoded_image)
+        # 显示新的图片
+        new_window = ImageWindow(self.master, image=encoded_image, encode_data=encoded_data)
+        new_window.show_image(image=encoded_image)
     
     def decode_image(self):
         # 解码图片
@@ -195,7 +199,7 @@ class ImageWindow(tk.Toplevel):
         
         encoded_image = self.load_image()
         lpc = LinearPredictiveCoder(predictor_order, prediction_coefficients)
-        decoded_image = lpc.decode(encoded_image)
+        decoded_image = lpc.decode(self.encode_data,encoded_image.size)
         
         # 创建新的ImageWindow来显示解码后的数据
         self.show_new_image(decoded_image)
