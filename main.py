@@ -166,8 +166,8 @@ class BMPApp:
         self.predictor_coefficient = [float(coeff) for coeff in self.predictor_coefficient.split(',')]
 
         coder = LinearPredictiveCoder(self.predictor_order, self.predictor_coefficient)
-        encoded_image = coder.encode(self.bmp_handler.image)
-        self.encode_data = encoded_image
+        self.encode_data = coder.encode(self.bmp_handler.image)
+        encoded_image = Image.fromarray(self.encode_data.astype(np.uint8))
 
         if encoded_image is not None:
             self.display_image(encoded_image)

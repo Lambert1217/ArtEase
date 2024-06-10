@@ -8,7 +8,7 @@ class LinearPredictiveCoder:
 
     def encode(self, image):
         img_data = np.array(image)
-        height, width = img_data.shape
+        height, width= img_data.shape
         encoded_data = np.zeros((height, width))
 
         if self.predictor_order == 1:
@@ -38,7 +38,7 @@ class LinearPredictiveCoder:
 
     def decode(self, encoded_data, image_shape):
         img_data = np.array(image_shape)
-        height, width = img_data.shape
+        height, width= img_data.shape
         decoded_data = np.zeros((height, width))
 
 
