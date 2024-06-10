@@ -9,9 +9,6 @@ class BMPFileHandler:
         self.image_list = []  # 存储导入的图片
         self.thumbnail_list = []  # 存储缩略图
         
-        self.label = tk.Label(master, text="选择一个 BMP 文件")
-        self.label.grid(row=0, column=0, columnspan=5, pady=10)
-        
         self.open_button = tk.Button(master, text="导入文件", command=self.import_files)
         self.open_button.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         
