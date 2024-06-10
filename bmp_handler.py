@@ -56,6 +56,7 @@ class BMPFileHandler:
         # 绑定鼠标事件
         self.canvas.bind("<Button-1>", self.start_drawing)
         self.canvas.bind("<B1-Motion>", self.draw)
+        self.master.bind("<Configure>", self.on_window_resize)
 
     def import_files(self):
         filetypes = [("BMP files", "*.bmp"), ("All files", "*.*")]
@@ -204,6 +205,10 @@ class BMPFileHandler:
         color = colorchooser.askcolor(title="选择画笔颜色")
         if color[1]:
             self.draw_color = color[1]
+    
+    def on_window_resize(self, event):
+        # 窗口大小变化时调用该方法
+        self.display_image()
 
 if __name__ == "__main__":
     root = tk.Tk()
