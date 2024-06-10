@@ -28,7 +28,7 @@ class BMPApp:
         # 创建文件菜单
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="文件", menu=self.file_menu)
-        self.file_menu.add_command(label="打开 BMP", command=self.bmp_handler.open_file)
+        self.file_menu.add_command(label="打开 BMP", command=self.bmp_handler.import_files)
         self.file_menu.add_command(label="保存 BMP", command=self.bmp_handler.save_file)
 
         # 创建编辑菜单
@@ -52,28 +52,33 @@ class BMPApp:
         self.encode_menu.add_command(label="解码图像", command=self.decode_image)
 
         # 创建调节亮度、饱和度、对比度的滑块
-        self.brightness_scale = tk.Scale(root, from_=0, to=2, resolution=0.01, label="亮度 (Brightness)",
-                                         orient="horizontal", command=self.adjust_image)
+        self.brightness_scale = tk.Scale(root, from_=0, to=2, resolution=0.01, label="亮度",
+                                         orient="horizontal", command=self.scale_changed)
         self.brightness_scale.set(1)
         self.brightness_scale.grid(row=0, column=0, padx=10, pady=5)
 
-        self.saturation_scale = tk.Scale(root, from_=0, to=2, resolution=0.01, label="饱和度 (Saturation)",
-                                         orient="horizontal", command=self.adjust_image)
+        self.saturation_scale = tk.Scale(root, from_=0, to=2, resolution=0.01, label="饱和度",
+                                         orient="horizontal", command=self.scale_changed)
         self.saturation_scale.set(1)
         self.saturation_scale.grid(row=0, column=1, padx=10, pady=5)
 
-        self.contrast_scale = tk.Scale(root, from_=0, to=2, resolution=0.01, label="对比度 (Contrast)",
-                                       orient="horizontal", command=self.adjust_image)
+        self.contrast_scale = tk.Scale(root, from_=0, to=2, resolution=0.01, label="对比度",
+                                       orient="horizontal", command=self.scale_changed)
         self.contrast_scale.set(1)
         self.contrast_scale.grid(row=0, column=2, padx=10, pady=5)
+
+        self.apply_adjustments_var = tk.BooleanVar()
+        self.apply_adjustments_checkbox = tk.Checkbutton(root, text="应用调整", variable=self.apply_adjustments_var,
+                                                           command=self.apply_adjustments_changed)
+        self.apply_adjustments_checkbox.grid(row=0, column=3, padx=10, pady=5)
 
         self.original_image = None
         self.bmp_crop_handler = None
 
     def display_image(self, image):
         self.bmp_handler.image = image
-        self.bmp_handler.temp_image = image
-        self.bmp_handler.display_image()  # 使用现有的显示方法显示图片
+        # 使用现有的显示方法显示图片
+        self.bmp_handler.display_image()
 
     def crop_image(self):
         if not self.bmp_handler.image:
@@ -225,31 +230,15 @@ class BMPApp:
         self.display_image(inverted_image)
         messagebox.showinfo("反相成功", "图像反相已完成并显示。")
 
-    def adjust_image(self, event=None):
-        if not self.bmp_handler.image:
-            return
-        
-        if not self.bmp_handler.temp_image:
-            return
+    def scale_changed(self, event=None):
+        self.bmp_handler.brightness = self.brightness_scale.get()
+        self.bmp_handler.saturation = self.saturation_scale.get()
+        self.bmp_handler.contrast = self.contrast_scale.get()
+        self.bmp_handler.display_image()
 
-        image = self.bmp_handler.temp_image.convert('RGB')  # 确保图像是RGB格式
-
-        # 获取滑块的当前值
-        brightness = self.brightness_scale.get()
-        saturation = self.saturation_scale.get()
-        contrast = self.contrast_scale.get()
-
-        # 调整亮度、饱和度和对比度
-        enhancer = ImageEnhance.Brightness(image)
-        image = enhancer.enhance(brightness)
-        enhancer = ImageEnhance.Color(image)
-        image = enhancer.enhance(saturation)
-        enhancer = ImageEnhance.Contrast(image)
-        image = enhancer.enhance(contrast)
-
-        # 显示调整后的图像
-        self.bmp_handler.image = image
-        self.bmp_handler.display_image()  # 使用现有的显示方法显示图片
+    def apply_adjustments_changed(self):
+        self.bmp_handler.apply_adjustments = self.apply_adjustments_var.get()
+        self.bmp_handler.display_image()
 
 
 if __name__ == "__main__":
